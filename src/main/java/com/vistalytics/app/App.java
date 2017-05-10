@@ -1,44 +1,85 @@
 package com.vistalytics.app;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
-import one.util.streamex.DoubleStreamEx;
+import java.util.Map;
 
 import org.apache.commons.csv.CSVRecord;
 
-import com.vistalytics.models.ReportModel;
 import com.vistalytics.utils.FileUtil;
+import com.vistalytics.utils.MathUtils;
+
 /**
  * Hello world!
  *
  */
-public class App 
-{
+public class App {
 	public static void main(String[] args) {
-		List<CSVRecord> records = null;
-		records = FileUtil.fileReader();
+		List<CSVRecord> records = FileUtil.fileReader();
+		List<Map<Integer, String>> modal = new ArrayList<>();
 
-		List<ReportModel> modal = new ArrayList<ReportModel>();
 		for (CSVRecord record : records) {
-			if (record.size() > 1 && record.getRecordNumber() != 2) {
-				List<Double> values = new ArrayList<Double>();
-				values.add((!record.get(1).isEmpty()) ? Double
-						.parseDouble(record.get(1)) : 0);
-				values.add((!record.get(2).isEmpty()) ? Double
-						.parseDouble(record.get(2)) : 0);
-				values.add((!record.get(3).isEmpty()) ? Double
-						.parseDouble(record.get(3)) : 0);
-				values.add((!record.get(4).isEmpty()) ? Double
-						.parseDouble(record.get(4)) : 0);
-				values.add((!record.get(5).isEmpty()) ? Double
-						.parseDouble(record.get(5)) : 0);
-				
-				double[] diff = DoubleStreamEx.of(values)
-						.pairMap((a, b) -> b - a).toArray();
-				double[] diffInPer = DoubleStreamEx.of(values)
-						.pairMap((a, b) -> ((b - a) / a) * 100).toArray();
-				modal.add(new ReportModel(record.get(0), diff[diff.length - 1], diffInPer[diffInPer.length - 1]));
+			if (record.size() > 1) {
+				Map<Integer, String> reportValues = new HashMap<>();
+				List<Double> values = new ArrayList<>();
+				for (String value : record) {
+					try{
+						if (!value.matches(".*[a-z].*")) {
+							values.add(value.isEmpty()? 0 : Double.parseDouble(value));
+						}						
+					} catch(NullPointerException e){
+						if(values.size() >= 1){
+							values.add(0.0);
+						}
+					}
+				}
+				System.out.println(record.get(0) + ": " + values.toString());
+				// Add key.
+				reportValues.put(1, record.get(0));
+
+				int recordSize = values.size();
+				boolean filter = values.get(0) == 0
+						|| values.get(recordSize - 2) == 0;
+
+				// Change Between Start of the range and end of the range.
+				String change = filter ? "-" : MathUtils.getAbsoluteChange(
+						values.get(recordSize - 2), values.get(0)).toString();
+				reportValues.put(2, change);
+
+				change = filter ? "-" : MathUtils.getPercentageChange(
+						values.get(recordSize - 2), values.get(0)).toString();
+				reportValues.put(3, "(" + change + ")");
+
+				// Change Between last two years.
+				filter = values.get(recordSize - 2) == 0
+						|| values.get(recordSize - 3) == 0;
+				change = filter ? "-" : MathUtils.getAbsoluteChange(
+						values.get(recordSize - 2), values.get(recordSize - 3))
+						.toString();
+				reportValues.put(4, change);
+
+				change = filter ? "-" : MathUtils.getPercentageChange(
+						values.get(recordSize - 2), values.get(recordSize - 3))
+						.toString();
+				reportValues.put(5, "(" + change + ")");
+
+				// Calculate average of values over range.
+				values.remove(recordSize - 1);
+				change = MathUtils.getAverageChangeOverRange(values).toString();
+				reportValues.put(6, change);
+
+				// Calculate average absolute change in values.
+				change = MathUtils.getAverageAbsoluteChangeOverRange(values)
+						.toString();
+				reportValues.put(7, change);
+
+				// Calculate average absolute change in values.
+
+				change = MathUtils.getAveragePercentageChangeOverRange(values)
+						.toString();
+				reportValues.put(8, "(" + change + ")");
+				modal.add(reportValues);
 			}
 		}
 		FileUtil.fileWriter(modal);
