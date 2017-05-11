@@ -24,10 +24,10 @@ public class FileUtil {
 	private static CSVParser parser = null;
 
 	public static List<CSVRecord> fileReader() {
-		File file = new File(App.class.getResource("/FSIC_Financial_Statement.csv")
+		File file = new File(App.class.getResource("/AAPL_Financial_Statement.csv")
 				.getPath());
 		System.out.println(file.exists());
-		CSVFormat format = CSVFormat.DEFAULT.withIgnoreEmptyLines().withHeader(READ_FILE_HEADER_MAPPING).withSkipHeaderRecord();
+		CSVFormat format = CSVFormat.RFC4180.withIgnoreEmptyLines().withSkipHeaderRecord();
 		FileReader reader = null;
 		try {
 			reader = new FileReader(file);
@@ -57,7 +57,7 @@ public class FileUtil {
 		FileWriter writer = null;
 		CSVPrinter printer = null;
 		try {
-			writer = new FileWriter(App.class.getResource("/FSIC_REPORT.csv")
+			writer = new FileWriter(App.class.getResource("/AAPL_Report.csv")
 					.getPath());
 			printer = new CSVPrinter(writer, format);
 			printer.printRecord(WRITE_FILE_HEADER_MAPPING);
